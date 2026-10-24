@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "All About IoT"
+version = "1.0.0"
+id = "artifacts/all-about-iot"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23460
+
+[services.development]
+run = "pnpm --filter @workspace/all-about-iot run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/all-about-iot", "run", "build" ]
+publicDir = "artifacts/all-about-iot/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23460"
+BASE_PATH = "/"

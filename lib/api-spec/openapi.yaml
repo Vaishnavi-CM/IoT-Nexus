@@ -1,0 +1,402 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: All About IoT API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: chatbot
+    description: AI Chatbot for IoT queries
+  - name: content
+    description: IoT content and concepts
+  - name: quiz
+    description: IoT quiz and assessments
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+        "503":
+          description: Database is unavailable
+
+  /chat:
+    post:
+      operationId: sendChatMessage
+      tags: [chatbot]
+      summary: Send a message to the IoT chatbot
+      description: Send a user message and receive an AI response about IoT topics
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatMessageInput"
+      responses:
+        "200":
+          description: Chat response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatResponse"
+        "400":
+          description: Bad request
+
+  /chat/history:
+    get:
+      operationId: getChatHistory
+      tags: [chatbot]
+      summary: Get recent chat history for a chat session
+      description: Returns the last N chat messages for the specified session
+      parameters:
+        - name: sessionId
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Chat history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChatMessage"
+    delete:
+      operationId: clearChatHistory
+      tags: [chatbot]
+      summary: Clear chat history for a chat session
+      parameters:
+        - name: sessionId
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
+      responses:
+        "204":
+          description: Chat history cleared
+
+  /concepts:
+    get:
+      operationId: getConcepts
+      tags: [content]
+      summary: Get all IoT concepts
+      description: Returns a list of all IoT concept topics organized by category
+      responses:
+        "200":
+          description: List of IoT concepts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Concept"
+
+  /concepts/{slug}:
+    get:
+      operationId: getConcept
+      tags: [content]
+      summary: Get a specific IoT concept
+      description: Returns detailed information about a specific IoT concept
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: IoT concept detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConceptDetail"
+        "404":
+          description: Concept not found
+
+  /stats:
+    get:
+      operationId: getSiteStats
+      tags: [content]
+      summary: Get site overview stats
+      description: Returns summary stats — total concepts, categories, questions answered
+      responses:
+        "200":
+          description: Site statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SiteStats"
+
+  /quiz:
+    get:
+      operationId: getQuizQuestions
+      tags: [quiz]
+      summary: Get quiz questions
+      description: Returns IoT quiz questions filtered by topic and difficulty
+      parameters:
+        - name: topic
+          in: query
+          schema:
+            type: string
+        - name: difficulty
+          in: query
+          schema:
+            type: string
+            enum: [beginner, intermediate, advanced]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: Quiz questions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/QuizQuestion"
+
+  /quiz/submit:
+    post:
+      operationId: submitQuizAnswer
+      tags: [quiz]
+      summary: Submit a quiz answer
+      description: Submit an answer for a quiz question and get feedback
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuizAnswerInput"
+      responses:
+        "200":
+          description: Answer feedback
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuizAnswerResult"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    ChatMessageInput:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          minLength: 1
+          maxLength: 4000
+        sessionId:
+          type: ["string", "null"]
+          maxLength: 128
+
+    ChatResponse:
+      type: object
+      required:
+        - response
+        - sessionId
+      properties:
+        response:
+          type: string
+        sessionId:
+          type: string
+        relatedTopics:
+          type: array
+          items:
+            type: string
+
+    ChatMessage:
+      type: object
+      required:
+        - id
+        - role
+        - content
+        - createdAt
+      properties:
+        id:
+          type: integer
+        role:
+          type: string
+          enum: [user, assistant]
+        content:
+          type: string
+        sessionId:
+          type: string
+        createdAt:
+          type: string
+
+    Concept:
+      type: object
+      required:
+        - id
+        - slug
+        - title
+        - category
+        - level
+        - description
+      properties:
+        id:
+          type: integer
+        slug:
+          type: string
+        title:
+          type: string
+        category:
+          type: string
+        level:
+          type: string
+          enum: [beginner, intermediate, advanced]
+        description:
+          type: string
+        hasAnimation:
+          type: boolean
+        hasSimulation:
+          type: boolean
+        hasDashboard:
+          type: boolean
+
+    ConceptDetail:
+      type: object
+      required:
+        - id
+        - slug
+        - title
+        - category
+        - level
+        - description
+        - content
+      properties:
+        id:
+          type: integer
+        slug:
+          type: string
+        title:
+          type: string
+        category:
+          type: string
+        level:
+          type: string
+        description:
+          type: string
+        content:
+          type: string
+        keyPoints:
+          type: array
+          items:
+            type: string
+        hasAnimation:
+          type: boolean
+        hasSimulation:
+          type: boolean
+        hasDashboard:
+          type: boolean
+        relatedConcepts:
+          type: array
+          items:
+            type: string
+
+    SiteStats:
+      type: object
+      required:
+        - totalConcepts
+        - totalCategories
+        - totalQuestionsAnswered
+        - topicsCount
+      properties:
+        totalConcepts:
+          type: integer
+        totalCategories:
+          type: integer
+        totalQuestionsAnswered:
+          type: integer
+        topicsCount:
+          type: object
+          additionalProperties:
+            type: integer
+
+    QuizQuestion:
+      type: object
+      required:
+        - id
+        - question
+        - options
+        - topic
+        - difficulty
+      properties:
+        id:
+          type: integer
+        question:
+          type: string
+        options:
+          type: array
+          items:
+            type: string
+        topic:
+          type: string
+        difficulty:
+          type: string
+          enum: [beginner, intermediate, advanced]
+        explanation:
+          type: ["string", "null"]
+
+    QuizAnswerInput:
+      type: object
+      required:
+        - questionId
+        - selectedOption
+      properties:
+        questionId:
+          type: integer
+        selectedOption:
+          type: integer
+
+    QuizAnswerResult:
+      type: object
+      required:
+        - correct
+        - correctOption
+        - explanation
+      properties:
+        correct:
+          type: boolean
+        correctOption:
+          type: integer
+        explanation:
+          type: string
