@@ -96,13 +96,8 @@ lib/
 scripts/
 ```
 
-## Troubleshooting
 
-- **Database file location:** set `DATABASE_PATH` in the root `.env` or deployment environment to store the SQLite database somewhere other than `data/all-about-iot.sqlite`.
-- **Frontend cannot reach the API:** keep the API on port `5000`, or set `API_PROXY_TARGET` to the API's actual URL.
-- **Port already in use:** change the relevant port and keep `API_PROXY_TARGET` aligned with the API port.
 
-## Security
 
 Never commit `.env` files, API keys, database passwords, or other credentials.
 
